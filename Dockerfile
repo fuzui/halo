@@ -6,10 +6,12 @@ ARG PORT=1024
 ARG TIME_ZONE=Asia/Shanghai
 
 ENV TZ=${TIME_ZONE}
-ENV JAVA_OPTS="-Xms1024m -Xmx1024m"
+
+ENV JVM_XMS="1024m"
+ENV JVM_XMX="1024m"
 
 COPY ${JAR_FILE} halo.jar
 
 EXPOSE ${PORT}
 
-ENTRYPOINT java ${JAVA_OPTS} -Djava.security.egd=file:/dev/./urandom -server -jar halo.jar
+ENTRYPOINT java -Xms${JVM_XMS} -Xmx${JVM_XMX} -Djava.security.egd=file:/dev/./urandom -server -jar halo.jar
