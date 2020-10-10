@@ -1,7 +1,7 @@
 FROM adoptopenjdk/openjdk8-openj9
 VOLUME /tmp
 
-ARG JAR_FILE=build/libs/halo-1.4.0.jar
+ARG JAR_FILE=build/libs/halo-1.4.1.jar
 ARG PORT=1024
 ARG TIME_ZONE=Asia/Shanghai
 
