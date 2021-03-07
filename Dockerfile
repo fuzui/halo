@@ -1,17 +1,24 @@
-FROM adoptopenjdk/openjdk8-openj9
-VOLUME /tmp
+FROM adoptopenjdk:11-jre-hotspot as builder
+WORKDIR application
+ARG JAR_FILE=build/libs/*.jar
+COPY ${JAR_FILE} application.jar
+RUN java -Djarmode=layertools -jar application.jar extract
 
-ARG JAR_FILE=build/libs/halo-1.4.2.jar
-ARG PORT=1024
-ARG TIME_ZONE=Asia/Shanghai
+FROM adoptopenjdk:11-jre-hotspot
+MAINTAINER johnniang <johnniang@fastmail.com>
+WORKDIR application
+COPY --from=builder application/dependencies/ ./
+COPY --from=builder application/spring-boot-loader/ ./
+COPY --from=builder application/snapshot-dependencies/ ./
+COPY --from=builder application/application/ ./
 
-ENV TZ=${TIME_ZONE}
+# JVM_XMS and JVM_XMX configs deprecated for removal in halov1.4.4
+ENV JVM_XMS="1024m" \
+    JVM_XMX="1024m" \
+    JVM_OPTS="-Xmx1024m -Xms1024m" \
+    TZ=Asia/Shanghai
 
-ENV JVM_XMS="1024m"
-ENV JVM_XMX="1024m"
+RUN ln -sf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone
 
-COPY ${JAR_FILE} halo.jar
-
-EXPOSE ${PORT}
-
-ENTRYPOINT java -Xms${JVM_XMS} -Xmx${JVM_XMX} -Djava.security.egd=file:/dev/./urandom -server -jar halo.jar
+ENTRYPOINT java -Xms${JVM_XMS} -Xmx${JVM_XMX} ${JVM_OPTS} -Djava.security.egd=file:/dev/./urandom org.springframework.boot.loader.JarLauncher

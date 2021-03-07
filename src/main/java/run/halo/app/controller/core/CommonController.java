@@ -1,6 +1,11 @@
 package run.halo.app.controller.core;
 
-import cn.hutool.extra.servlet.ServletUtil;
+import static run.halo.app.model.support.HaloConst.DEFAULT_ERROR_PATH;
+
+import java.util.Collections;
+import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.web.ErrorProperties;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
@@ -22,13 +27,6 @@ import run.halo.app.service.OptionService;
 import run.halo.app.service.ThemeService;
 import run.halo.app.utils.FilenameUtils;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.util.Collections;
-import java.util.Map;
-
-import static run.halo.app.model.support.HaloConst.DEFAULT_ERROR_PATH;
-
 /**
  * Error page Controller
  *
@@ -46,7 +44,8 @@ public class CommonController extends AbstractErrorController {
 
     private static final String ERROR_TEMPLATE = "error.ftl";
 
-    private static final String COULD_NOT_RESOLVE_VIEW_WITH_NAME_PREFIX = "Could not resolve view with name '";
+    private static final String COULD_NOT_RESOLVE_VIEW_WITH_NAME_PREFIX =
+        "Could not resolve view with name '";
 
     private final ThemeService themeService;
 
@@ -55,9 +54,9 @@ public class CommonController extends AbstractErrorController {
     private final OptionService optionService;
 
     public CommonController(ThemeService themeService,
-            ErrorAttributes errorAttributes,
-            ServerProperties serverProperties,
-            OptionService optionService) {
+        ErrorAttributes errorAttributes,
+        ServerProperties serverProperties,
+        OptionService optionService) {
         super(errorAttributes);
         this.themeService = themeService;
         this.errorProperties = serverProperties.getError();
@@ -71,18 +70,14 @@ public class CommonController extends AbstractErrorController {
      * @return String
      */
     @GetMapping
-    public String handleError(HttpServletRequest request, HttpServletResponse response, Model model) {
-        log.error("Request URL: [{}], URI: [{}], Request Method: [{}], IP: [{}]",
-                request.getRequestURL(),
-                request.getRequestURI(),
-                request.getMethod(),
-                ServletUtil.getClientIP(request));
-
+    public String handleError(HttpServletRequest request, HttpServletResponse response,
+        Model model) {
         handleCustomException(request);
 
         ErrorAttributeOptions options = getErrorAttributeOptions(request);
 
-        Map<String, Object> errorDetail = Collections.unmodifiableMap(getErrorAttributes(request, options));
+        Map<String, Object> errorDetail =
+            Collections.unmodifiableMap(getErrorAttributes(request, options));
         model.addAttribute("error", errorDetail);
         model.addAttribute("meta_keywords", optionService.getSeoKeywords());
         model.addAttribute("meta_description", optionService.getSeoDescription());
@@ -145,9 +140,9 @@ public class CommonController extends AbstractErrorController {
 
         StringBuilder path = new StringBuilder();
         path.append("themes/")
-                .append(themeService.getActivatedTheme().getFolderName())
-                .append('/')
-                .append(FilenameUtils.getBasename(template));
+            .append(themeService.getActivatedTheme().getFolderName())
+            .append('/')
+            .append(FilenameUtils.getBasename(template));
 
         return path.toString();
     }
@@ -168,15 +163,20 @@ public class CommonController extends AbstractErrorController {
         Throwable throwable = (Throwable) throwableObject;
 
         if (throwable instanceof NestedServletException) {
-            log.error("Captured an exception", throwable);
+            log.error("Captured an exception: [{}]", throwable.getMessage());
             Throwable rootCause = ((NestedServletException) throwable).getRootCause();
             if (rootCause instanceof AbstractHaloException) {
+                if (!(rootCause instanceof NotFoundException)) {
+                    log.error("Caused by", rootCause);
+                }
                 AbstractHaloException haloException = (AbstractHaloException) rootCause;
-                request.setAttribute("javax.servlet.error.status_code", haloException.getStatus().value());
+                request.setAttribute("javax.servlet.error.status_code",
+                    haloException.getStatus().value());
                 request.setAttribute("javax.servlet.error.exception", rootCause);
                 request.setAttribute("javax.servlet.error.message", haloException.getMessage());
             }
-        } else if (StringUtils.startsWithIgnoreCase(throwable.getMessage(), COULD_NOT_RESOLVE_VIEW_WITH_NAME_PREFIX)) {
+        } else if (StringUtils.startsWithIgnoreCase(throwable.getMessage(),
+            COULD_NOT_RESOLVE_VIEW_WITH_NAME_PREFIX)) {
             log.debug("Captured an exception", throwable);
             request.setAttribute("javax.servlet.error.status_code", HttpStatus.NOT_FOUND.value());
 
@@ -225,7 +225,8 @@ public class CommonController extends AbstractErrorController {
         if (include == ErrorProperties.IncludeStacktrace.ALWAYS) {
             return ErrorAttributeOptions.of(ErrorAttributeOptions.Include.STACK_TRACE);
         }
-        if (include == ErrorProperties.IncludeStacktrace.ON_TRACE_PARAM && getTraceParameter(request)) {
+        if (include == ErrorProperties.IncludeStacktrace.ON_TRACE_PARAM
+            && getTraceParameter(request)) {
             return ErrorAttributeOptions.of(ErrorAttributeOptions.Include.STACK_TRACE);
         }
         return ErrorAttributeOptions.defaults();
