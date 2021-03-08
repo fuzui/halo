@@ -25,8 +25,12 @@ repositories {
 //    maven {
 //        url "https://maven.aliyun.com/nexus/content/groups/public"
 //    }
-    mavenCentral()
-    jcenter()
+    mavenCentral {
+        url "https://maven.aliyun.com/repository/central"
+    }
+    jcenter {
+        url "https://maven.aliyun.com/repository/jcenter"
+    }
 }
 
 configurations {
