@@ -18,9 +18,15 @@ checkstyle {
 
 repositories {
     mavenLocal()
-    mavenCentral()
-    maven { url 'https://repo.spring.io/milestone' }
-    jcenter()
+//    maven {
+//        url "https://maven.aliyun.com/nexus/content/groups/public"
+//    }
+    mavenCentral {
+        url "https://maven.aliyun.com/repository/central"
+    }
+    jcenter {
+        url "https://maven.aliyun.com/repository/jcenter"
+    }
 }
 
 configurations {
