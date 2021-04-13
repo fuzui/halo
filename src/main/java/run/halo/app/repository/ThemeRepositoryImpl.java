@@ -1,6 +1,5 @@
 package run.halo.app.repository;
 
-import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static run.halo.app.model.properties.PrimaryProperties.THEME;
 import static run.halo.app.model.support.HaloConst.DEFAULT_THEME_ID;
 import static run.halo.app.utils.FileUtils.copyFolder;
@@ -13,6 +12,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
@@ -25,6 +25,7 @@ import run.halo.app.event.options.OptionUpdatedEvent;
 import run.halo.app.exception.AlreadyExistsException;
 import run.halo.app.exception.NotFoundException;
 import run.halo.app.exception.ServiceException;
+import run.halo.app.exception.ThemeNotFoundException;
 import run.halo.app.exception.ThemeNotSupportException;
 import run.halo.app.handler.theme.config.support.ThemeProperty;
 import run.halo.app.model.entity.Option;
@@ -67,15 +68,29 @@ public class ThemeRepositoryImpl
     public ThemeProperty getActivatedThemeProperty() {
         ThemeProperty themeProperty = this.currentTheme;
         if (themeProperty == null) {
+            AtomicBoolean fallbackTheme = new AtomicBoolean(false);
             synchronized (this) {
                 if (this.currentTheme == null) {
                     // get current theme id
                     String currentThemeId = this.optionRepository.findByKey(THEME.getValue())
                         .map(Option::getValue)
                         .orElse(DEFAULT_THEME_ID);
+
                     // fetch current theme
-                    this.currentTheme = this.getThemeByThemeId(currentThemeId);
+                    this.currentTheme =
+                        this.fetchThemeByThemeId(currentThemeId).orElseGet(() -> {
+                            if (!StringUtils.equalsIgnoreCase(currentThemeId, DEFAULT_THEME_ID)) {
+                                fallbackTheme.set(true);
+                                return this.getThemeByThemeId(DEFAULT_THEME_ID);
+                            }
+                            throw new ThemeNotFoundException(
+                                "Default theme: " + DEFAULT_THEME_ID + " was not found!");
+                        });
                 }
+            }
+            if (fallbackTheme.get()) {
+                // need set default theme as fallback theme
+                setActivatedTheme(DEFAULT_THEME_ID);
             }
         }
         return this.currentTheme;
@@ -116,7 +131,7 @@ public class ThemeRepositoryImpl
     @Override
     public ThemeProperty attemptToAdd(ThemeProperty newProperty) {
         // 1. check existence
-        final var alreadyExist = fetchThemePropertyByThemeId(newProperty.getId()).isPresent();
+        final var alreadyExist = fetchThemeByThemeId(newProperty.getId()).isPresent();
         if (alreadyExist) {
             throw new AlreadyExistsException("当前安装的主题已存在");
         }
@@ -131,7 +146,7 @@ public class ThemeRepositoryImpl
         // 3. move the temp folder into templates/themes/{theme_id}
         final var sourceThemePath = Paths.get(newProperty.getThemePath());
         final var targetThemePath =
-            getThemeRootPath().resolve(newProperty.getId() + "-" + randomAlphabetic(5));
+            getThemeRootPath().resolve(newProperty.getId());
 
         // 4. clear target theme folder firstly
         deleteFolderQuietly(targetThemePath);
@@ -188,16 +203,22 @@ public class ThemeRepositoryImpl
     @Override
     public void onApplicationEvent(OptionUpdatedEvent event) {
         synchronized (this) {
+            // reset current theme with null
             this.currentTheme = null;
         }
     }
 
     @NonNull
     protected ThemeProperty getThemeByThemeId(String themeId) {
+        return fetchThemeByThemeId(themeId).orElseThrow(
+            () -> new ThemeNotFoundException("Failed to find theme with id: " + themeId));
+    }
+
+    @NonNull
+    protected Optional<ThemeProperty> fetchThemeByThemeId(String themeId) {
         return ThemePropertyScanner.INSTANCE.scan(getThemeRootPath(), null)
             .stream()
             .filter(property -> Objects.equals(themeId, property.getId()))
-            .findFirst()
-            .orElseThrow();
+            .findFirst();
     }
 }

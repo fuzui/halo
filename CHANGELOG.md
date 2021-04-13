@@ -1,5 +1,50 @@
 # CHANGELOG
 
+# 1.4.8
+
+## Features
+
+- 系统设置中支持设置 Gravatar 源地址。#1331 halo-dev/halo-admin#314
+
+## Improvements
+
+- 优化 RSS 订阅最后更新时间字段。#1342
+
+## Bug Fixes
+
+- 修复在 1.4.7 中，导入 Markdown 提示格式不正确的问题。halo-dev/halo-admin#311
+- 修复后台评论管理页面安全性问题。halo-dev/halo-admin#313
+- 修复 Content API 中，文章评论数不正确的问题。#1327
+- 修复 Content API 中，有关 Options 内容安全性的问题。#1345
+
+# 1.4.7
+
+## Bug Fixes
+
+- 修复在 Windows 平台下，上传主题压缩包提示不支持当前文件格式的问题。halo-dev/halo-admin#309
+
+# 1.4.6
+
+## Features
+
+- 主题编写支持继承以及 block 特性。halo-dev/halo#1295
+
+## Improvements
+
+- 重构初始化页面，目前分为全新安装和数据导入。从这个版本开始，数据导入将导入所有数据。halo-dev/halo-admin#296
+- 优化后台菜单管理的排序拖动体验。halo-dev/halo-admin#291
+- 移除后台设置项字符数的限制。halo-dev/halo#1287
+
+## Bug Fixes
+
+- 修复后台上传组件格式限制不生效的问题。halo-dev/halo-admin#296
+- 修复后台新建文章页面，点击浏览器回退键不提示保存的问题。halo-dev/halo-admin#302
+- 修复后台备份无法下载的问题。halo-dev/halo#1278
+- 修复 1.4.5 版本中前台页面渲染不完整的问题。halo-dev/halo#1301
+- 修复上传某些格式的图片因为缩略图生成失败导致上传错误的问题。halo-dev/halo#1298
+- 修复 Swagger 文档分页数据字段和实际不一致的问题。halo-dev/halo#1277
+- 修复 1.4.5 版本中通过主题包升级主题失败的问题。halo-dev/halo#1284
+
 # 1.4.5
 
 ## Improvements
